@@ -1,0 +1,274 @@
+###############################################################################
+# .gitignore для проектов Bitrix24 9.0
+# Создан на основе официальных рекомендаций и опыта сообщества разработчиков
+###############################################################################
+
+# === ОСНОВНЫЕ ДИРЕКТОРИИ И ФАЙЛЫ BITRIX24 ===
+
+# Ядро Bitrix24 (исключаем полностью, кроме /local)
+/bitrix/
+!/bitrix/templates/
+/bitrix/templates/*
+!/bitrix/templates/.site_template_*
+
+# Загрузки пользователей
+/upload/
+
+# БЕЗОПАСНОСТЬ: исключаем PHP файлы из upload (могут быть уязвимостью!)
+/upload/*.php
+/upload/resize_cache/
+/upload/tmp/
+
+# Сервисные скрипты установки и обслуживания
+/bitrix_setup.php
+/restore.php
+/bitrix_server_test.php
+/test.php
+/urlrewrite.php
+
+# Конфигурационные файлы Apache/Nginx
+/.htaccess
+/web.config
+
+# SEO файлы (генерируются автоматически)
+/sitemap*.xml
+/robots.txt
+
+# === РАБОЧАЯ ДИРЕКТОРИЯ /local ===
+# Исключаем временные и кэш файлы из /local
+
+# Кэш (расширенный список)
+/local/cache/
+/local/managed_cache/
+/local/stack_cache/
+
+# Дополнительные кэш-директории Bitrix
+/bitrix/cache/
+/bitrix/managed_cache/
+/bitrix/stack_cache/
+/bitrix/html_pages/
+/bitrix/tmp/
+
+# Логи
+/local/logs/
+*.log
+
+# Временные файлы
+/local/tmp/
+/local/temp/
+
+# Резервные копии
+/local/backup/
+/local/bx_cloud_upload/
+
+# Исключаем тестовые, отладочные и служебные файлы в /local
+/local/*.txt
+/local/test*.php
+/local/*test*.php
+/local/debug*.php
+/local/*debug*.php
+/local/fix_*.php
+/local/implement_*.php
+/local/remove_*.php
+/local/emergency_*.php
+/local/radical_*.php
+
+# === ФАЙЛЫ КОНФИГУРАЦИИ И ДАННЫЕ ===
+
+# Настройки подключения к БД и другие чувствительные данные
+/bitrix/.settings.php
+/bitrix/.settings_extra.php
+/local/.settings.php
+/local/.settings_extra.php
+
+# Старый формат конфигурации БД (Bitrix <= 17.0)
+/bitrix/php_interface/dbconn.php
+
+# Файлы лицензий
+/license_key.php
+/bitrix/license_key.php
+
+# Файлы обновлений
+/bitrix/updates/
+/bitrix/backup/
+
+# === СИСТЕМНЫЕ ФАЙЛЫ ОС ===
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# === IDE И РЕДАКТОРЫ ===
+
+# PhpStorm / WebStorm / IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Atom
+.atom/
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# === АРХИВЫ И СЖАТЫЕ ФАЙЛЫ ===
+*.zip
+*.rar
+*.7z
+*.tar
+*.tar.gz
+*.tar.bz2
+*.gz
+*.bz2
+*.xz
+
+# === РАЗРАБОТКА И ИНСТРУМЕНТЫ ===
+
+# Composer
+/vendor/
+composer.lock
+composer.phar
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# Sass/SCSS
+.sass-cache/
+*.css.map
+
+# Webpack и сборщики
+/dist/
+/build/
+webpack-stats.json
+
+# === ТЕСТИРОВАНИЕ ===
+
+# PHPUnit
+/phpunit.xml
+/phpunit.xml.dist
+/.phpunit.result.cache
+/tests/_output/*
+/tests/_support/_generated
+
+# Codeception
+codeception.yml
+
+# === ДОКУМЕНТАЦИЯ ===
+
+# Исключаем автогенерируемую документацию
+/docs/api/
+/docs/build/
+
+# === РАЗНОЕ ===
+
+# Временные файлы
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+
+# Дополнительные паттерны backup файлов
+*_backup*
+*.our_changes_backup
+
+# Файлы профилирования
+*.prof
+
+# Файлы отладки
+*.debug
+
+# === ДОПОЛНИТЕЛЬНАЯ БЕЗОПАСНОСТЬ ===
+
+# Файлы ключей и сертификатов
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Файлы с чувствительными данными
+secrets.php
+config.local.php
+.env.local
+.env.production
+.env.*.local
+
+# Файлы редакторов и патчей
+*.orig
+*.rej
+*.diff
+
+# === ИСКЛЮЧЕНИЯ (файлы которые ДОЛЖНЫ быть в репозитории) ===
+
+# Важно: включаем пользовательские шаблоны и компоненты в /local
+!/local/templates/
+!/local/components/
+!/local/modules/
+!/local/php_interface/
+!/local/activities/
+!/local/gadgets/
+!/local/js/
+!/local/css/
+
+# Конфигурационные файлы для разработки (без чувствительных данных)
+!/.editorconfig
+!/README.md
+!/composer.json
+!/package.json
+!/.gitignore
+!/.gitattributes
+
+###############################################################################
+# Примечания:
+# 1. Всегда храните только пользовательский код в /local/
+# 2. Никогда не коммитьте пароли и API ключи
+# 3. Регулярно обновляйте .gitignore при появлении новых файлов
+# 4. Используйте git rm --cached для удаления уже отслеживаемых файлов
+###############################################################################
