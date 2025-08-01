@@ -1,5 +1,5 @@
 <?php
-# тест 
+
 namespace Bitrix\Tasks\Helper;
 
 use Bitrix\Main\Context;
