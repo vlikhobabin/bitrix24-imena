@@ -5,8 +5,8 @@
 
 # === ОСНОВНЫЕ ДИРЕКТОРИИ И ФАЙЛЫ BITRIX24 ===
 
-# Ядро Bitrix24 (исключаем полностью, кроме /local)
-/bitrix/
+# Ядро Bitrix24 - отслеживаем для разработки, исключаем только служебные папки
+# /bitrix/ - УБРАНО: отслеживаем ядро для доработок
 !/bitrix/templates/
 /bitrix/templates/*
 !/bitrix/templates/.site_template_*
