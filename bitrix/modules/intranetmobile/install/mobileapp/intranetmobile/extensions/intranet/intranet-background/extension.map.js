@@ -1,0 +1,1 @@
+{"version":3,"file":"extension.map.js","names":["jn","define","require","exports","module","IntranetBackground","init","UserMiniProfile"],"sources":["extension.js"],"mappings":"AAGAA,GAAGC,OAAO,uBAAuB,CAACC,EAASC,EAASC,KACnD,MAAMC,EAEL,WAAOC,GAEN,MAAMC,gBAAEA,GAAoBL,EAAQ,8BACpCK,EAAgBD,MACjB,EAGDF,EAAOD,QAAU,CAChBE,qBACA","ignoreList":[]}

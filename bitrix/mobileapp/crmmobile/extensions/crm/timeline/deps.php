@@ -1,0 +1,60 @@
+<?php
+
+return [
+	'extensions' => [
+		'statemanager/redux/store',
+		'statemanager/redux/slices/users',
+
+		'layout/ui/floating-button',
+		'layout/ui/context-menu',
+		'layout/ui/widget-header-button',
+		'layout/ui/snackbar-text',
+		'layout/ui/timeline/components/divider',
+		'layout/ui/text-editor',
+		'layout/ui/textarea',
+		'selector/widget/factory',
+
+		'crm:timeline/ui/date-divider',
+		'crm:timeline/ui/banner',
+		'crm:timeline/ui/reminder',
+		'crm:timeline/ui/sticky-date',
+		'crm:timeline/ui/toolbar',
+		'crm:timeline/ui/expand-text-button',
+
+		'crm:timeline/services/activity-viewer',
+		'crm:timeline/services/data-provider',
+		'crm:timeline/services/file-selector-configs',
+		'crm:timeline/services/push-processor',
+
+		'crm:timeline/action',
+		'crm:timeline/controllers',
+		'crm:timeline/item',
+		'crm:timeline/stream',
+		'crm:timeline/scheduler',
+		'crm:document/details',
+
+		'crm:type',
+
+		'tasks:task',
+		'loc',
+		'utils/prop',
+		'utils/date',
+		'utils/random',
+		'utils/color',
+		'utils/type',
+		'utils/url',
+		'utils/file',
+		'event-emitter',
+		'rest',
+		'haptics',
+		'qrauth/utils',
+		'alert',
+		'feature',
+		'utils/error-notifier',
+		'notify',
+		'animation/components/fade-view',
+		'pull/client/events',
+		'feature',
+		'apptheme',
+	],
+];

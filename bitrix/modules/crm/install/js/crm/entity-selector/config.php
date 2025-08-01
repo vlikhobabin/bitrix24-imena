@@ -1,0 +1,64 @@
+<?php
+
+if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true)
+{
+	die();
+}
+
+use Bitrix\Crm\Integration\UI\EntitySelector\CopilotLanguageProvider;
+use Bitrix\Crm\Integration\UI\EntitySelector\CountryProvider;
+use Bitrix\Crm\Integration\UI\EntitySelector\MessageTemplateProvider;
+use Bitrix\Crm\Integration\UI\EntitySelector\PlaceholderProvider;
+use Bitrix\Main\Loader;
+
+if (!Loader::includeModule('crm'))
+{
+	return [];
+}
+
+return [
+	'js' => 'dist/crm-entity-selector.bundle.js',
+	'rel' => [
+		'main.polyfill.core',
+		'ui.entity-selector',
+	],
+	'skip_core' => true,
+	'settings' => [
+		'entities' => [
+			[
+				'id' => CopilotLanguageProvider::ENTITY_ID,
+				'options' => [
+					'dynamicLoad' => true,
+				],
+			],
+			[
+				'id' => CountryProvider::ENTITY_ID,
+				'options' => [
+					'dynamicLoad' => true,
+					'itemOptions' => [
+						'default' => [
+							'avatar' => CountryProvider::getIconByCode(CountryProvider::GLOBAL_COUNTRY_CODE),
+						],
+					],
+					'tagOptions'  => [
+						'default' => [
+							'avatar' => CountryProvider::getIconByCode(CountryProvider::GLOBAL_COUNTRY_CODE),
+						],
+					],
+				],
+			],
+			[
+				'id' => MessageTemplateProvider::ENTITY_ID,
+				'options' => [
+					'dynamicLoad' => true,
+				],
+			],
+			[
+				'id' => PlaceholderProvider::ENTITY_ID,
+				'options' => [
+					'dynamicLoad' => true,
+				],
+			],
+		],
+	],
+];
