@@ -25,102 +25,7 @@ use Bitrix\Tasks\Util\User;
 use Bitrix\UI\Toolbar\Facade\Toolbar;
 use Bitrix\Main\Text\HtmlFilter;
 
-// ================== ПРИНУДИТЕЛЬНАЯ ОБРАБОТКА UF_PROJECT ==================
-// ОБРАБАТЫВАЕМ UF_PROJECT ДО НАЧАЛА ОСНОВНОЙ ЛОГИКИ КОМПОНЕНТА
 
-// Функция логирования (объявляем здесь для раннего использования) - УПРОЩЕННАЯ
-function logEnumFilterDebugEarly($message, $data = null) {
-    // Логируем только если есть UF_PROJECT или ошибки
-    if (strpos($message, 'UF_PROJECT') === false && strpos($message, 'error') === false) {
-        return;
-    }
-    
-    $logFile = $_SERVER["DOCUMENT_ROOT"] . "/local/enum_filter_debug.log";
-    $timestamp = date('Y-m-d H:i:s');
-    $logMessage = "[$timestamp] EARLY: $message";
-    if ($data !== null) {
-        $logMessage .= "\n" . print_r($data, true);
-    }
-    $logMessage .= "\n---\n";
-    @file_put_contents($logFile, $logMessage, FILE_APPEND | LOCK_EX);
-}
-
-// Принудительная обработка UF_PROJECT в самом начале
-$ufProjectFound = null;
-
-// 1. Проверяем POST данные
-if (isset($_POST['data']['additional']['UF_PROJECT']) && $_POST['data']['additional']['UF_PROJECT'] !== '') {
-    $ufProjectFound = $_POST['data']['additional']['UF_PROJECT'];
-    logEnumFilterDebugEarly("Found UF_PROJECT in POST[additional]", ['value' => $ufProjectFound]);
-}
-elseif (isset($_POST['data']['fields']['UF_PROJECT']) && $_POST['data']['fields']['UF_PROJECT'] !== '') {
-    $ufProjectFound = $_POST['data']['fields']['UF_PROJECT'];
-    logEnumFilterDebugEarly("Found UF_PROJECT in POST[fields]", ['value' => $ufProjectFound]);
-}
-// 2. Проверяем уже существующие GET/REQUEST
-elseif (isset($_GET['UF_PROJECT']) && $_GET['UF_PROJECT'] !== '') {
-    $ufProjectFound = $_GET['UF_PROJECT'];
-    logEnumFilterDebugEarly("Found UF_PROJECT in GET", ['value' => $ufProjectFound]);
-}
-// 3. Ищем в SESSION
-else {
-    if (isset($_SESSION)) {
-        foreach ($_SESSION as $sessionKey => $sessionData) {
-            if (strpos($sessionKey, 'main.ui.filter') !== false && is_array($sessionData)) {
-                if (isset($sessionData['TASKS_GRID_ROLE_ID_4096_0_ADVANCED_N']['filters'])) {
-                    $filters = $sessionData['TASKS_GRID_ROLE_ID_4096_0_ADVANCED_N']['filters'];
-                    foreach ($filters as $presetName => $presetData) {
-                        if (isset($presetData['additional']['UF_PROJECT']) && $presetData['additional']['UF_PROJECT'] !== '') {
-                            $ufProjectFound = $presetData['additional']['UF_PROJECT'];
-                            logEnumFilterDebugEarly("Found UF_PROJECT in SESSION", [
-                                'value' => $ufProjectFound,
-                                'preset' => $presetName
-                            ]);
-                            break 2;
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-// Если найден UF_PROJECT - ПРИНУДИТЕЛЬНО модифицируем arParams И ПОДГОТАВЛИВАЕМ arResult
-if ($ufProjectFound !== null) {
-    // Инициализируем фильтр если не существует
-    if (!isset($arParams['FILTER'])) {
-        $arParams['FILTER'] = array();
-    }
-    
-    // КРИТИЧНО: Bitrix ожидает фильтры как массивы!
-    // Конвертируем значение в массив для совместимости с CTasks::GetList
-    $ufProjectArray = is_array($ufProjectFound) ? $ufProjectFound : [$ufProjectFound];
-    
-    // Принудительно добавляем UF_PROJECT в параметры компонента
-    $arParams['FILTER']['UF_PROJECT'] = $ufProjectArray;
-    $arParams['FORCED_UF_PROJECT'] = $ufProjectFound;
-    
-    // Также добавляем в REQUEST/GET для полной совместимости
-    $_GET['UF_PROJECT'] = $ufProjectArray;
-    $_REQUEST['UF_PROJECT'] = $ufProjectArray;
-    
-    // ПОДГОТАВЛИВАЕМ ДАННЫЕ ДЛЯ ПРАВИЛЬНОГО arResult['FILTER'] (основная логика будет в конце)
-    $GLOBALS['UF_PROJECT_FORCE_VALUE'] = $ufProjectFound;
-    
-    logEnumFilterDebugEarly("APPLIED UF_PROJECT to component parameters", [
-        'value' => $ufProjectFound,
-        'arParams_FILTER' => $arParams['FILTER'],
-        'GET_UF_PROJECT' => $_GET['UF_PROJECT'],
-        'REQUEST_UF_PROJECT' => $_REQUEST['UF_PROJECT'],
-        'GLOBALS_set' => 'yes'
-    ]);
-} else {
-    logEnumFilterDebugEarly("No UF_PROJECT found in any source for early processing", [
-        'POST_data' => $_POST['data'] ?? 'not_set',
-        'GET_UF_PROJECT' => $_GET['UF_PROJECT'] ?? 'not_set',
-        'SESSION_checked' => 'yes'
-    ]);
-}
 
 Extension::load(["ui.notification", "ui.icons", "ui.avatar",]);
 $isExtranetUser = \Bitrix\Tasks\Integration\Extranet\User::isExtranet();
@@ -400,11 +305,6 @@ for ($i = 0; $i < $ufFieldsCount; $i++) {
     // Метод 1: Через USER_FIELD_MANAGER
     if ($userFieldInfo && isset($userFieldInfo['ID'])) {
         $userFieldId = $userFieldInfo['ID'];
-        logEnumFilterDebugRM("Field info found via USER_FIELD_MANAGER", [
-            'field_name' => $fieldName,
-            'user_field_id' => $userFieldId,
-            'method' => 'USER_FIELD_MANAGER'
-        ]);
     }
     // Метод 2: Прямой запрос к CUserTypeEntity
     else {
@@ -414,18 +314,6 @@ for ($i = 0; $i < $ufFieldsCount; $i++) {
         );
         if ($arUserField = $rsUserField->Fetch()) {
             $userFieldId = $arUserField['ID'];
-            logEnumFilterDebugRM("Field info found via CUserTypeEntity", [
-                'field_name' => $fieldName,
-                'user_field_id' => $userFieldId,
-                'method' => 'CUserTypeEntity',
-                'full_info' => $arUserField
-            ]);
-        } else {
-            logEnumFilterDebugRM("Field info NOT found by any method", [
-                'field_name' => $fieldName,
-                'user_field_manager_result' => $userFieldInfo ? 'exists_but_no_ID' : 'not_exists',
-                'available_fields' => array_keys($arFields)
-            ]);
         }
     }
     
@@ -438,13 +326,6 @@ for ($i = 0; $i < $ufFieldsCount; $i++) {
             $priorityItems[$arEnum['ID']] = $arEnum['VALUE'];
             $priorityItemIDs[] = $arEnum['ID'];
         }
-        
-        logEnumFilterDebugRM("Enum values retrieved", [
-            'field_name' => $fieldName,
-            'user_field_id' => $userFieldId,
-            'items_found' => count($priorityItems),
-            'items' => $priorityItems
-        ]);
     }
 
     // Сохраняем данные для обработки строк
@@ -463,13 +344,6 @@ for ($i = 0; $i < $ufFieldsCount; $i++) {
             'type' => 'list',
             'items' => $priorityItems,  // ВОТ КЛЮЧ! Правильные значения для UI
         );
-        
-        logEnumFilterDebugRM("Modified filter for field", [
-            'field' => $fieldName,
-            'original_filter' => $originalFilter,
-            'new_filter' => $arResult['FILTER'][$fieldName],
-            'items_count' => count($priorityItems)
-        ]);
     } else {
         // Если фильтра нет в arResult - создаем его
         $arResult['FILTER'][$fieldName] = array(
@@ -478,12 +352,6 @@ for ($i = 0; $i < $ufFieldsCount; $i++) {
             'type' => 'list',
             'items' => $priorityItems,
         );
-        
-        logEnumFilterDebugRM("Created new filter for field", [
-            'field' => $fieldName,
-            'created_filter' => $arResult['FILTER'][$fieldName],
-            'items_count' => count($priorityItems)
-        ]);
     }
 }
 
@@ -499,15 +367,30 @@ if (!empty($allEnumData)) {
             $priorityItemId = isset($rowColumns[$fieldName]) ? $rowColumns[$fieldName] : null;
             
             // Конвертируем ID в текстовое значение
-            if ($priorityItemId && in_array($priorityItemId, $enumData['item_ids'])) {
-                $rowColumns[$fieldName] = $enumData['items'][$priorityItemId];
+            if ($priorityItemId) {
+                // Проверяем, является ли значение множественным (строка с запятыми или массив)
+                $valueIds = [];
+                if (is_array($priorityItemId)) {
+                    $valueIds = $priorityItemId;
+                } elseif (is_string($priorityItemId) && strpos($priorityItemId, ',') !== false) {
+                    // Множественные значения через запятую
+                    $valueIds = array_map('trim', explode(',', $priorityItemId));
+                } else {
+                    // Одиночное значение
+                    $valueIds = [$priorityItemId];
+                }
                 
-                logEnumFilterDebugRM("Converted row value", [
-                    'field' => $fieldName,
-                    'from_id' => $priorityItemId,
-                    'to_value' => $enumData['items'][$priorityItemId],
-                    'row_id' => $row['id'] ?? 'unknown'
-                ]);
+                $convertedValues = [];
+                foreach ($valueIds as $singleId) {
+                    if ($singleId && in_array($singleId, $enumData['item_ids'])) {
+                        $convertedValues[] = $enumData['items'][$singleId];
+                    }
+                }
+                
+                if (!empty($convertedValues)) {
+                    // Объединяем множественные значения через запятую
+                    $rowColumns[$fieldName] = implode(', ', $convertedValues);
+                }
             }
         }
             
@@ -519,300 +402,4 @@ if (!empty($allEnumData)) {
     $arResult['ROWS'] = $arResultRows;
 }
 
-// ================== ОБРАБОТКА ENUM ФИЛЬТРОВ ==================
 
-// Логирование для отладки - ТОЛЬКО ВАЖНЫЕ СОБЫТИЯ
-function logEnumFilterDebugRM($message, $data = null) {
-    // УПРОЩЕННОЕ ЛОГИРОВАНИЕ - только при фильтрации или ошибках
-    $importantEvents = [
-        'Field info found',
-        'Field info NOT found', 
-        'Modified filter for field',
-        'FINAL RESULT',
-        'Applied UF_PROJECT filter'
-    ];
-    
-    $isImportant = false;
-    foreach ($importantEvents as $event) {
-        if (strpos($message, $event) !== false) {
-            $isImportant = true;
-            break;
-        }
-    }
-    
-    // Также логируем если есть фильтрация
-    if (isset($_REQUEST['apply_filter']) && $_REQUEST['apply_filter'] === 'Y') {
-        $isImportant = true;
-    }
-    
-    if (!$isImportant) {
-        return; // Пропускаем не важные события
-    }
-    
-    $logFile = $_SERVER["DOCUMENT_ROOT"] . "/local/enum_filter_debug.log";
-    $timestamp = date('Y-m-d H:i:s');
-    $logMessage = "[$timestamp] RESULT_MODIFIER: $message";
-    if ($data !== null) {
-        $logMessage .= "\n" . print_r($data, true);
-    }
-    $logMessage .= "\n---\n";
-    
-    @file_put_contents($logFile, $logMessage, FILE_APPEND | LOCK_EX);
-}
-
-// ПРИНУДИТЕЛЬНАЯ ОБРАБОТКА UF_PROJECT В COMPONENT - ПРЯМОЙ ПОДХОД
-function forceUfProjectProcessing() {
-    logEnumFilterDebugRM("forceUfProjectProcessing called", [
-        'REQUEST_URI' => $_SERVER['REQUEST_URI'],
-        'POST_data' => $_POST['data'] ?? 'not_set',
-        'GET_UF_PROJECT' => $_GET['UF_PROJECT'] ?? 'not_set',
-        'apply_filter' => $_REQUEST['apply_filter'] ?? 'not_set'
-    ]);
-    
-    $ufProjectValue = null;
-    
-    // 1. Проверяем POST данные (из AJAX)
-    if (isset($_POST['data']['additional']['UF_PROJECT'])) {
-        $ufProjectValue = $_POST['data']['additional']['UF_PROJECT'];
-        logEnumFilterDebugRM("Found UF_PROJECT in POST[data][additional]", [
-            'value' => $ufProjectValue,
-            'source' => 'POST_additional'
-        ]);
-    }
-    // 2. Проверяем POST данные (из fields)
-    elseif (isset($_POST['data']['fields']['UF_PROJECT'])) {
-        $ufProjectValue = $_POST['data']['fields']['UF_PROJECT'];
-        logEnumFilterDebugRM("Found UF_PROJECT in POST[data][fields]", [
-            'value' => $ufProjectValue,
-            'source' => 'POST_fields'
-        ]);
-    }
-    // 3. Проверяем GET параметры
-    elseif (isset($_GET['UF_PROJECT'])) {
-        $ufProjectValue = $_GET['UF_PROJECT'];
-        logEnumFilterDebugRM("Found UF_PROJECT in GET", [
-            'value' => $ufProjectValue,
-            'source' => 'GET'
-        ]);
-    }
-    // 4. Проверяем REQUEST
-    elseif (isset($_REQUEST['UF_PROJECT'])) {
-        $ufProjectValue = $_REQUEST['UF_PROJECT'];
-        logEnumFilterDebugRM("Found UF_PROJECT in REQUEST", [
-            'value' => $ufProjectValue,
-            'source' => 'REQUEST'
-        ]);
-    }
-    // 5. Ищем в SESSION
-    else {
-        if (isset($_SESSION)) {
-            foreach ($_SESSION as $sessionKey => $sessionData) {
-                if (strpos($sessionKey, 'main.ui.filter') !== false && is_array($sessionData)) {
-                    if (isset($sessionData['TASKS_GRID_ROLE_ID_4096_0_ADVANCED_N']['filters'])) {
-                        $filters = $sessionData['TASKS_GRID_ROLE_ID_4096_0_ADVANCED_N']['filters'];
-                        foreach ($filters as $presetName => $presetData) {
-                            if (isset($presetData['additional']['UF_PROJECT'])) {
-                                $ufProjectValue = $presetData['additional']['UF_PROJECT'];
-                                logEnumFilterDebugRM("Found UF_PROJECT in SESSION", [
-                                    'value' => $ufProjectValue,
-                                    'source' => 'SESSION',
-                                    'preset' => $presetName
-                                ]);
-                                break 2;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    // Применяем UF_PROJECT если найден
-    if ($ufProjectValue !== null && $ufProjectValue !== '') {
-        // Добавляем в GET для передачи компоненту
-        $_GET['UF_PROJECT'] = $ufProjectValue;
-        $_REQUEST['UF_PROJECT'] = $ufProjectValue;
-        
-        logEnumFilterDebugRM("FORCED UF_PROJECT processing", [
-            'value' => $ufProjectValue,
-            'GET_UF_PROJECT' => $_GET['UF_PROJECT'],
-            'REQUEST_UF_PROJECT' => $_REQUEST['UF_PROJECT']
-        ]);
-        
-        return $ufProjectValue;
-    } else {
-        logEnumFilterDebugRM("No UF_PROJECT found in any source", [
-            'POST_data' => $_POST['data'] ?? 'not_set',
-            'GET_UF_PROJECT' => $_GET['UF_PROJECT'] ?? 'not_set',
-            'REQUEST_UF_PROJECT' => $_REQUEST['UF_PROJECT'] ?? 'not_set'
-        ]);
-        return null;
-    }
-}
-
-// ПРИНУДИТЕЛЬНО ОБРАБАТЫВАЕМ UF_PROJECT ДО ВСЕГО ОСТАЛЬНОГО
-$forcedUfProject = forceUfProjectProcessing();
-
-logEnumFilterDebugRM("result_modifier.php executed", [
-    'REQUEST_URI' => $_SERVER['REQUEST_URI'],
-    'GET' => $_GET,
-    'POST' => $_POST,
-    'apply_filter_GET' => $_GET['apply_filter'] ?? 'not_set',
-    'apply_filter_POST' => $_POST['apply_filter'] ?? 'not_set',
-    'apply_filter_REQUEST' => $_REQUEST['apply_filter'] ?? 'not_set',
-    'forced_UF_PROJECT' => $forcedUfProject
-]);
-
-// ПРЯМАЯ ОБРАБОТКА ФИЛЬТРОВ В RESULT_MODIFIER - ИСПОЛЬЗОВАНИЕ ПРИНУДИТЕЛЬНОЙ ОБРАБОТКИ
-$ufProjectValue = $forcedUfProject; // Используем результат принудительной обработки
-$filterDetected = false;
-
-// Детектируем применение фильтра различными способами
-if (isset($_REQUEST['apply_filter']) && $_REQUEST['apply_filter'] === 'Y') {
-    $filterDetected = true;
-    logEnumFilterDebugRM("Filter application detected via apply_filter", [
-        'GET' => $_GET,
-        'POST' => $_POST,
-        'forced_UF_PROJECT' => $forcedUfProject
-    ]);
-}
-
-// Или если есть принудительно обработанный UF_PROJECT
-if ($forcedUfProject !== null) {
-    $filterDetected = true;
-    $ufProjectValue = $forcedUfProject;
-    logEnumFilterDebugRM("Filter detected via forced processing", [
-        'UF_PROJECT' => $ufProjectValue
-    ]);
-}
-
-// Или если есть POST данные с фильтром
-if (isset($_POST['data']['fields']['UF_PROJECT']) || isset($_POST['data']['additional']['UF_PROJECT'])) {
-    $filterDetected = true;
-    $postUfProject = $_POST['data']['fields']['UF_PROJECT'] ?? $_POST['data']['additional']['UF_PROJECT'];
-    if ($ufProjectValue === null) {
-        $ufProjectValue = $postUfProject;
-    }
-    logEnumFilterDebugRM("Filter detected via POST data", [
-        'UF_PROJECT' => $ufProjectValue,
-        'POST_UF_PROJECT' => $postUfProject
-    ]);
-}
-
-// Или проверяем arParams (переданные из OnBeforeComponentStart)
-if (isset($arParams['FORCED_UF_PROJECT'])) {
-    $filterDetected = true;
-    if ($ufProjectValue === null) {
-        $ufProjectValue = $arParams['FORCED_UF_PROJECT'];
-    }
-    logEnumFilterDebugRM("Filter detected via arParams", [
-        'UF_PROJECT' => $ufProjectValue
-    ]);
-}
-
-if ($filterDetected) {
-    // Если не нашли в POST/arParams, ищем в SESSION
-    if ($ufProjectValue === null && isset($_SESSION)) {
-        foreach ($_SESSION as $sessionKey => $sessionData) {
-            if (strpos($sessionKey, 'main.ui.filter') !== false && is_array($sessionData)) {
-                logEnumFilterDebugRM("Found filter session key", [
-                    'sessionKey' => $sessionKey
-                ]);
-                
-                if (isset($sessionData['TASKS_GRID_ROLE_ID_4096_0_ADVANCED_N']['filters'])) {
-                    $filters = $sessionData['TASKS_GRID_ROLE_ID_4096_0_ADVANCED_N']['filters'];
-                    
-                    logEnumFilterDebugRM("Found filters in SESSION", [
-                        'filters' => $filters
-                    ]);
-                    
-                    foreach ($filters as $presetName => $presetData) {
-                        if (isset($presetData['additional']['UF_PROJECT'])) {
-                            $ufProjectValue = $presetData['additional']['UF_PROJECT'];
-                            
-                            logEnumFilterDebugRM("Found UF_PROJECT in SESSION", [
-                                'preset' => $presetName,
-                                'value' => $ufProjectValue,
-                                'type' => gettype($ufProjectValue)
-                            ]);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    // Применяем фильтр к результату
-    if ($ufProjectValue !== null) {
-        // Модифицируем arResult
-        if (!isset($arResult['FILTER_FIELDS'])) {
-            $arResult['FILTER_FIELDS'] = array();
-        }
-        $arResult['FILTER_FIELDS']['UF_PROJECT'] = $ufProjectValue;
-        
-        // КРИТИЧНО: Bitrix ожидает фильтры как массивы!
-        // Конвертируем значение в массив для совместимости с CTasks::GetList
-        $ufProjectValueArray = is_array($ufProjectValue) ? $ufProjectValue : [$ufProjectValue];
-        
-        // НОВОЕ РЕШЕНИЕ: Компонент НЕ использует arParams['FILTER']!
-        // Он использует $this->filter->process()! Нужно модифицировать фильтр после его создания
-        
-        // КРИТИЧНО: Попытаемся модифицировать component object напрямую
-        if (isset($component) && is_object($component)) {
-            // Попытаемся получить доступ к listParameters
-            $reflection = new ReflectionClass($component);
-            if ($reflection->hasProperty('listParameters')) {
-                $listParamsProp = $reflection->getProperty('listParameters');
-                $listParamsProp->setAccessible(true);
-                $listParams = $listParamsProp->getValue($component);
-                
-                if (!isset($listParams['filter'])) {
-                    $listParams['filter'] = array();
-                }
-                $listParams['filter']['UF_PROJECT'] = $ufProjectValueArray;
-                $listParamsProp->setValue($component, $listParams);
-                
-                logEnumFilterDebugRM("MODIFIED COMPONENT listParameters directly", [
-                    'listParams_filter' => $listParams['filter']
-                ]);
-            }
-        }
-        
-        // Также модифицируем arParams (если доступны)
-        if (!isset($arParams['FILTER'])) {
-            $arParams['FILTER'] = array();
-        }
-        $arParams['FILTER']['UF_PROJECT'] = $ufProjectValueArray;
-        
-        logEnumFilterDebugRM("Applied UF_PROJECT filter", [
-            'value' => $ufProjectValue,
-            'arResult_FILTER_FIELDS' => $arResult['FILTER_FIELDS'],
-            'arParams_FILTER' => $arParams['FILTER']
-        ]);
-    } else {
-        logEnumFilterDebugRM("No UF_PROJECT value found despite filter detection", [
-            'POST_data' => $_POST['data'] ?? 'not_set',
-            'arParams_FORCED' => $arParams['FORCED_UF_PROJECT'] ?? 'not_set'
-        ]);
-    }
-}
-
-// ================== ФИНАЛЬНАЯ ДИАГНОСТИКА ==================
-logEnumFilterDebugRM("FINAL RESULT - arResult FILTER state", [
-    'arResult_FILTER_keys' => array_keys($arResult['FILTER'] ?? []),
-    'UF_PROJECT_filter' => $arResult['FILTER']['UF_PROJECT'] ?? 'not_set',
-    'total_filters' => count($arResult['FILTER'] ?? []),
-    'forced_value_from_early_processing' => $GLOBALS['UF_PROJECT_FORCE_VALUE'] ?? 'not_set'
-]);
-
-// Дополнительная проверка - есть ли в arResult['FILTER'] наше поле UF_PROJECT
-if (isset($arResult['FILTER']['UF_PROJECT'])) {
-    logEnumFilterDebugRM("SUCCESS: UF_PROJECT found in final arResult FILTER", [
-        'filter_content' => $arResult['FILTER']['UF_PROJECT']
-    ]);
-} else {
-    logEnumFilterDebugRM("WARNING: UF_PROJECT NOT found in final arResult FILTER", [
-        'available_filters' => array_keys($arResult['FILTER'] ?? [])
-    ]);
-}
