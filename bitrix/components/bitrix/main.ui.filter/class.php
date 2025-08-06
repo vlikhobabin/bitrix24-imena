@@ -1040,17 +1040,7 @@ class CMainUiFilter extends CBitrixComponent
 
 	static function prepareField($field, $filterId = '')
 	{
-		// ЛОГИРОВАНИЕ: Что получает prepareField
-		if (isset($field['id']) && (strpos($field['id'], 'UF_') === 0 || $field['id'] === 'STATUS')) {
-			error_log('LOCAL PREPARE FIELD INPUT (' . $field['id'] . '): ' . json_encode($field));
-		}
-		
 		$adapted = FieldAdapter::adapt($field, $filterId);
-		
-		// ЛОГИРОВАНИЕ: Что возвращает FieldAdapter::adapt
-		if (isset($field['id']) && (strpos($field['id'], 'UF_') === 0 || $field['id'] === 'STATUS')) {
-			error_log('LOCAL PREPARE FIELD ADAPTED (' . $field['id'] . '): ' . json_encode($adapted));
-		}
 		
 		$result = array_merge(
 			$adapted,
@@ -1058,11 +1048,6 @@ class CMainUiFilter extends CBitrixComponent
 			['REQUIRED' => isset($field['required']) && $field['required'] === true],
 			['VALUE_REQUIRED' => isset($field['valueRequired']) && $field['valueRequired'] === true],
 		);
-		
-		// Временная диагностика для UF полей
-		if (isset($field['id']) && strpos($field['id'], 'UF_') === 0) {
-			error_log('PREPARE FIELD UF: ' . $field['id'] . ' -> result id: ' . ($result['id'] ?? 'NO ID'));
-		}
 		
 		return $result;
 	}
@@ -1118,22 +1103,10 @@ class CMainUiFilter extends CBitrixComponent
 
 			if (is_array($sourceFields) && !empty($sourceFields))
 			{
-				// Временная диагностика
-				$ufCount = 0;
 				foreach ($sourceFields as $sourceField)
 				{
-					if (isset($sourceField['id']) && strpos($sourceField['id'], 'UF_') === 0) {
-						$ufCount++;
-						// КРИТИЧЕСКОЕ ЛОГИРОВАНИЕ: Что получает prepareField ДО обработки
-						error_log('MAIN.UI.FILTER SOURCE FIELD (' . $sourceField['id'] . '): ' . json_encode($sourceField));
-					}
-					if (isset($sourceField['id']) && $sourceField['id'] === 'STATUS') {
-						// КРИТИЧЕСКОЕ ЛОГИРОВАНИЕ: Как выглядит STATUS поле ДО обработки
-						error_log('MAIN.UI.FILTER SOURCE FIELD (STATUS): ' . json_encode($sourceField));
-					}
 					$this->arResult["FIELDS"][] = static::prepareField($sourceField, $this->arParams['FILTER_ID']);
 				}
-				error_log('PREPARE FIELDS: processed ' . count($sourceFields) . ' fields, ' . $ufCount . ' UF fields, result count: ' . count($this->arResult["FIELDS"]));
 			}
 		}
 

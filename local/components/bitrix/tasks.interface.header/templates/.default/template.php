@@ -65,7 +65,6 @@ if ($isCollab)
 if ($arParams['SHOW_FILTER'] === 'Y')
 {
 	// ИСПРАВЛЕНИЕ: Восстанавливаем params для UF enum полей 
-	error_log('INTERFACE HEADER: Используется локальная копия!');
 	$fixedFilter = $arParams[ 'FILTER' ] ?? null;
 	if (is_array($fixedFilter)) {
 		foreach ($fixedFilter as $fieldId => &$filterConfig) {
@@ -79,7 +78,6 @@ if ($arParams['SHOW_FILTER'] === 'Y')
 				if (isset($scheme[$fieldId]) && $scheme[$fieldId]['USER_TYPE_ID'] === 'enumeration') {
 					$filterConfig['params'] = ['multiple' => 'Y'];
 					unset($filterConfig['uf']);
-					error_log('INTERFACE HEADER ENUM FIX (' . $fieldId . '): ' . json_encode($filterConfig));
 				}
 			}
 		}

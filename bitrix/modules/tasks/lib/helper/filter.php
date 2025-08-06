@@ -601,13 +601,6 @@ class Filter extends Common
 		if (empty($filters))
 		{
 			$filters = $this->getFilterRaw();
-			
-			// КРИТИЧЕСКОЕ ЛОГИРОВАНИЕ: Что возвращает getFilters
-			foreach ($filters as $fieldId => $fieldConfig) {
-				if (strpos($fieldId, 'UF_') === 0 || $fieldId === 'STATUS') {
-					error_log('GET FILTERS RESULT (' . $fieldId . '): ' . json_encode($fieldConfig));
-				}
-			}
 		}
 
 		return $filters;

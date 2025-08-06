@@ -277,11 +277,6 @@ class FieldAdapter
 	 */
 	public static function normalize(array $sourceField): array
 	{
-		// ЛОГИРОВАНИЕ: Что получает normalize
-		if (isset($sourceField['id']) && (strpos($sourceField['id'], 'UF_') === 0 || $sourceField['id'] === 'STATUS')) {
-			error_log('NORMALIZE INPUT (' . $sourceField['id'] . '): ' . json_encode($sourceField));
-		}
-		
 		if (!isset($sourceField['type']))
 		{
 			$sourceField['type'] = self::STRING;
@@ -300,21 +295,10 @@ class FieldAdapter
 		}
 		else
 		{
-			$oldValue = $sourceField['params']['multiple'];
 			$sourceField['params']['multiple'] = (
 				$sourceField['params']['multiple'] === 'Y'
 				|| $sourceField['params']['multiple'] === true
 			);
-			
-			// ЛОГИРОВАНИЕ: Конвертация multiple
-			if (isset($sourceField['id']) && (strpos($sourceField['id'], 'UF_') === 0 || $sourceField['id'] === 'STATUS')) {
-				error_log('NORMALIZE MULTIPLE CONVERSION (' . $sourceField['id'] . '): ' . json_encode($oldValue) . ' -> ' . json_encode($sourceField['params']['multiple']));
-			}
-		}
-
-		// ЛОГИРОВАНИЕ: Что возвращает normalize
-		if (isset($sourceField['id']) && (strpos($sourceField['id'], 'UF_') === 0 || $sourceField['id'] === 'STATUS')) {
-			error_log('NORMALIZE OUTPUT (' . $sourceField['id'] . '): ' . json_encode($sourceField));
 		}
 
 		return $sourceField;
