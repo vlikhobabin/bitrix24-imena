@@ -785,6 +785,60 @@ class TasksTaskListComponent extends TasksBaseComponent
 		$this->arResult['MESSAGES'] = [];
 
 		$this->arResult["FILTER"] = $this->filter->getFilters();
+		
+		// Принудительно добавляем поддержку множественного выбора для enum полей
+		$enumFieldsFound = [];
+		
+		// ЛОГИРОВАНИЕ: Проверяем что получили из getFilters
+		error_log('TASKS CLASS FILTER COUNT: ' . count($this->arResult["FILTER"]));
+		
+		foreach ($this->arResult["FILTER"] as $fieldId => &$filterConfig) {
+			// ЛОГИРОВАНИЕ: Проверяем каждое поле
+			if (strpos($fieldId, 'UF_') === 0) {
+				error_log('TASKS CLASS UF FIELD (' . $fieldId . '): ' . json_encode($filterConfig));
+			}
+			
+			if (isset($filterConfig['type']) && $filterConfig['type'] === 'list' &&
+				isset($filterConfig['items']) && is_array($filterConfig['items'])) {
+				
+				error_log('TASKS CLASS LIST FIELD (' . $fieldId . '): checking enum conditions');
+				
+				// Проверяем, является ли это enum полем
+				$uf = \Bitrix\Tasks\Item\Task::getUserFieldControllerClass();
+				$scheme = $uf::getScheme();
+				
+				error_log('TASKS CLASS SCHEME CHECK (' . $fieldId . '): scheme exists = ' . (isset($scheme[$fieldId]) ? 'YES' : 'NO'));
+				if (isset($scheme[$fieldId])) {
+					error_log('TASKS CLASS SCHEME TYPE (' . $fieldId . '): ' . ($scheme[$fieldId]['USER_TYPE_ID'] ?? 'UNKNOWN'));
+				}
+				
+				if (isset($scheme[$fieldId]) && $scheme[$fieldId]['USER_TYPE_ID'] === 'enumeration') {
+					$filterConfig['params'] = ['multiple' => 'Y'];
+					// Убираем UF флаг - возможно он мешает multiple в UI
+					unset($filterConfig['uf']);
+					$enumFieldsFound[] = $fieldId;
+					
+					// ЛОГИРОВАНИЕ: Проверяем что обработка работает
+					error_log('TASKS CLASS ENUM FIX (' . $fieldId . '): ' . json_encode($filterConfig));
+				}
+			}
+		}
+		unset($filterConfig);
+		
+		// ЛОГИРОВАНИЕ: Итоговые поля с enum
+		if (!empty($enumFieldsFound)) {
+			error_log('TASKS CLASS ENUM FIELDS FOUND: ' . implode(', ', $enumFieldsFound));
+		}
+		
+		// ЛОГИРОВАНИЕ: Финальная проверка UF_PROJECT перед передачей
+		if (isset($this->arResult["FILTER"]["UF_PROJECT"])) {
+			error_log('TASKS CLASS FINAL UF_PROJECT: ' . json_encode($this->arResult["FILTER"]["UF_PROJECT"]));
+		}
+		
+
+		
+
+		
 		$this->arResult["PRESETS"] = $this->filter->getAllPresets();
 
 		$this->listParameters['filter'] = ($this->arParams['IS_MOBILE'] ?? null)

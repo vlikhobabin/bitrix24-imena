@@ -1040,8 +1040,20 @@ class CMainUiFilter extends CBitrixComponent
 
 	static function prepareField($field, $filterId = '')
 	{
+		// ЛОГИРОВАНИЕ: Что получает prepareField
+		if (isset($field['id']) && (strpos($field['id'], 'UF_') === 0 || $field['id'] === 'STATUS')) {
+			error_log('PREPARE FIELD INPUT (' . $field['id'] . '): ' . json_encode($field));
+		}
+		
+		$adapted = FieldAdapter::adapt($field, $filterId);
+		
+		// ЛОГИРОВАНИЕ: Что возвращает FieldAdapter::adapt
+		if (isset($field['id']) && (strpos($field['id'], 'UF_') === 0 || $field['id'] === 'STATUS')) {
+			error_log('PREPARE FIELD ADAPTED (' . $field['id'] . '): ' . json_encode($adapted));
+		}
+		
 		return array_merge(
-			FieldAdapter::adapt($field, $filterId),
+			$adapted,
 			['STRICT' => isset($field['strict']) && $field['strict'] === true],
 			['REQUIRED' => isset($field['required']) && $field['required'] === true],
 			['VALUE_REQUIRED' => isset($field['valueRequired']) && $field['valueRequired'] === true],

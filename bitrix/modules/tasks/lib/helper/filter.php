@@ -367,7 +367,11 @@ class Filter extends Common
 		$filters = $this->getFilters();
 		foreach ($filters as $fieldId => $filterRow)
 		{
-			if (!array_key_exists('uf', $filterRow) || !$filterRow['uf'])
+			// Проверяем UF флаг ИЛИ является ли поле enum полем по схеме
+			$isUfField = (array_key_exists('uf', $filterRow) && $filterRow['uf']);
+			$isEnumField = isset($ufScheme[$fieldId]) && $ufScheme[$fieldId]['USER_TYPE_ID'] === 'enumeration';
+			
+			if (!$isUfField && !$isEnumField)
 			{
 				continue;
 			}
@@ -380,8 +384,13 @@ class Filter extends Common
 					$isEnumField = isset($ufScheme[$fieldId]) && $ufScheme[$fieldId]['USER_TYPE_ID'] === 'enumeration';
 					
 					if ($isEnumField) {
-						// Для enum полей не добавляем префикс % (для точного совпадения)
-						$ufFilter[$fieldId] = $this->getFilterFieldData($fieldId);
+						// Для enum полей используем обработку как для list (для множественного выбора)
+						$data = $this->getListFilterFieldData($filterRow);
+						if ($data)
+						{
+							$ufFilter = array_merge($ufFilter, $data);
+							$fieldsToSkipEmptyClearing[] = $fieldId;
+						}
 					} else {
 						// Для обычных строковых полей добавляем префикс % (для LIKE поиска)
 						$ufFilter["%{$fieldId}"] = $this->getFilterFieldData($fieldId);
@@ -414,10 +423,13 @@ class Filter extends Common
 						];
 						$key = key($data);
 						$value = current($data);
-						if (array_key_exists($value, $map))
+						
+						// Проверяем что value - скалярное значение, а не массив (для UF множественного выбора)
+						if (is_scalar($value) && array_key_exists($value, $map))
 						{
 							$data[$key] = $map[$value];
 						}
+						
 						$ufFilter = array_merge($ufFilter, $data);
 						$fieldsToSkipEmptyClearing[] = $key;
 					}
@@ -589,6 +601,13 @@ class Filter extends Common
 		if (empty($filters))
 		{
 			$filters = $this->getFilterRaw();
+			
+			// КРИТИЧЕСКОЕ ЛОГИРОВАНИЕ: Что возвращает getFilters
+			foreach ($filters as $fieldId => $fieldConfig) {
+				if (strpos($fieldId, 'UF_') === 0 || $fieldId === 'STATUS') {
+					error_log('GET FILTERS RESULT (' . $fieldId . '): ' . json_encode($fieldConfig));
+				}
+			}
 		}
 
 		return $filters;
@@ -601,6 +620,8 @@ class Filter extends Common
 	{
 		$filter = [];
 		$fields = $this->getAvailableFields();
+		
+
 
 		$isScrumProject = $this->isScrumProject();
 
@@ -670,6 +691,9 @@ class Filter extends Common
 				'items' => $statusItems,
 				'default' => $isScrumProject,
 			];
+			
+			// ЛОГИРОВАНИЕ: Конфигурация STATUS поля
+			error_log('FILTER CONFIG STATUS: ' . json_encode($filter['STATUS']));
 		}
 
 		if (in_array('DEADLINE', $fields))
@@ -1008,6 +1032,11 @@ class Filter extends Common
 		{
 			foreach ($uf as $item)
 			{
+				// Проверяем что UF поле есть в списке доступных полей
+				if (!in_array($item['FIELD_NAME'], $fields))
+				{
+					continue;
+				}
 				$type = $item['USER_TYPE_ID'];
 				if ($type === 'crm')
 				{
@@ -1063,9 +1092,15 @@ class Filter extends Common
 						'id' => $item['FIELD_NAME'],
 						'name' => $item['EDIT_FORM_LABEL'],
 						'type' => 'list',
+						'params' => ['multiple' => 'Y'],
 						'items' => $enumItems,
-						'uf' => true,
+						// 'uf' => true, // Убираем UF флаг - возможно он мешает multiple в UI
 					];
+					
+					// ЛОГИРОВАНИЕ: Конфигурация UF enum поля
+					error_log('FILTER CONFIG UF ENUM: ' . $item['FIELD_NAME'] . ' -> ' . json_encode($filter[$item['FIELD_NAME']]));
+					
+
 				}
 				else
 				{
@@ -1078,6 +1113,8 @@ class Filter extends Common
 				}
 			}
 		}
+
+
 
 		return $filter;
 	}
@@ -1122,6 +1159,16 @@ class Filter extends Common
 		else
 		{
 			$fields[] = 'GROUP_ID';
+		}
+
+		// Добавляем пользовательские поля в список доступных полей
+		$ufScheme = $this->getUF();
+		if (!empty($ufScheme))
+		{
+			foreach ($ufScheme as $fieldName => $fieldData)
+			{
+				$fields[] = $fieldName;
+			}
 		}
 
 		return $fields;
@@ -1233,6 +1280,8 @@ class Filter extends Common
 	private function getFilterFieldData($field, $default = null): mixed
 	{
 		$filterData = $this->getFilterData();
+		
+
 
 		return (array_key_exists($field, $filterData) ? $filterData[$field] : $default);
 	}
@@ -1489,7 +1538,21 @@ class Filter extends Common
 			default:
 				if ($field)
 				{
-					$filter[$rowId] = $field;
+					// Обработка UF полей - убираем пустые значения для множественного выбора
+					if (strpos($rowId, 'UF_') === 0 && is_array($field)) {
+						$field = array_filter($field, function($value) {
+							return $value !== '' && $value !== null;
+						});
+						
+						// Если массив стал пустым, не добавляем в фильтр
+						if (empty($field)) {
+							$field = null;
+						}
+					}
+					
+					if ($field !== null) {
+						$filter[$rowId] = $field;
+					}
 				}
 				break;
 		}

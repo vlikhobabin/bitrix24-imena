@@ -454,6 +454,11 @@ class Field
 			"ITEMS" => $items,
 			"PARAMS" => array("isMulti" => true)
 		);
+		
+		// Временная диагностика для UF полей
+		if (strpos($name, 'UF_') === 0) {
+			error_log('MULTI SELECT UF: name=' . $name . ' -> ID=' . $field['ID']);
+		}
 
 		return $field;
 	}
